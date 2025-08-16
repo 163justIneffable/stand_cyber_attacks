@@ -99,15 +99,15 @@
 
 | ВМ | CPU | RAM | HDD | Примечания |
 |----|-----|-----|-----|------------|
-| Debian (web/db) | 2 vCPU | 4 GB | 50 GB | Docker, PostgreSQL |
-| Windows 10 | 4 vCPU | 8 GB | 60 GB | GUI, браузеры |
+| Debian (web/db) | 2 vCPU | 2 GB | 30 GB | Docker, PostgreSQL |
+| Windows 10 | 2 vCPU | 44 GB | 40 GB | GUI, браузеры |
 | Kali Linux (сети) | 2 vCPU | 4 GB | 40 GB | атаки L2/L3 |
 | Kali Linux (DHCP) | 2 vCPU | 4 GB | 40 GB | MITM DHCP |
-| Debian (мишень) | 2 vCPU | 4 GB | 30 GB | веб-приложение |
-| Debian (DHCP мишень) | 2 vCPU | 4 GB | 30 GB | тест DHCP |
-| Debian (злоумышленник) | 2 vCPU | 4 GB | 30 GB | сбор данных |
-| Ubuntu | 2 vCPU | 4 GB | 30 GB | Docker Escape |
-| MikroTik | 1 vCPU | 256 MB | 2 GB | RouterOS |
+| Debian (мишень) | 2 vCPU | 2 GB | 30 GB | веб-приложение |
+| Debian (DHCP мишень) | 2 vCPU | 2 GB | 30 GB | тест DHCP |
+| Debian (злоумышленник) | 2 vCPU | 2 GB | 30 GB | сбор данных |
+| Ubuntu | 2 vCPU | 2 GB | 30 GB | Docker Escape |
+| MikroTik | 1 vCPU | 1 GB | 8 GB | RouterOS |
 
 ---
 
