@@ -100,13 +100,13 @@
 | ВМ | CPU | RAM | HDD | Примечания |
 |----|-----|-----|-----|------------|
 | Debian (web/db) | 2 vCPU | 2 GB | 30 GB | Docker, PostgreSQL |
-| Windows 10 | 2 vCPU | 44 GB | 40 GB | GUI, браузеры |
+| Windows 10 | 2 vCPU | 4 GB | 40 GB | GUI, браузеры |
 | Kali Linux (сети) | 2 vCPU | 4 GB | 40 GB | атаки L2/L3 |
 | Kali Linux (DHCP) | 2 vCPU | 4 GB | 40 GB | MITM DHCP |
 | Debian (мишень) | 2 vCPU | 2 GB | 30 GB | веб-приложение |
 | Debian (DHCP мишень) | 2 vCPU | 2 GB | 30 GB | тест DHCP |
 | Debian (злоумышленник) | 2 vCPU | 2 GB | 30 GB | сбор данных |
-| Ubuntu | 2 vCPU | 2 GB | 30 GB | Docker Escape |
+| Ubuntu | 2 vCPU | 2 GB | 30 GB | Docker Escape, QRLJacking |
 | MikroTik | 1 vCPU | 1 GB | 8 GB | RouterOS |
 
 ---
@@ -164,7 +164,7 @@
 
 ---
 
-## 📦 Docker Compose (серверная часть)
+## 📦 Cерверная часть
 
 ```yaml
 version: '3.8'
