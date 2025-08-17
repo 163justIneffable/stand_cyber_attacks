@@ -644,3 +644,5 @@ http://192.168.0.69:2222/dashboard.php?payload=%3Cscript%3Edocument.onkeypress%3
 
 ### 🎥 Видео-демонстрация атаки
 [Смотреть видео в Google Drive](https://drive.google.com/file/d/1A0Uh9WIpx9KFe4nZnPX7zDC-92cl0SQB/view?usp=sharing)
+
+### в ближайшее время начну дописывать еще оставшиеся атаки...
