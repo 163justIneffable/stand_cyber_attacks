@@ -60,7 +60,7 @@
 - RAID: MegaRAID SAS + Lewisburg SATA  
 
 **Платформа:** VMware ESXi (основной гипервизор)  
-На ESXi развёрнут вложенный ESXi как учебный стенд. В нём создано **8 виртуальных машин** и **1 виртуальный маршрутизатор**.
+На ESXi развёрнут вложенный ESXi (16vCPU, 30 GB, 500 GB) как учебный стенд. В нём создано **8 виртуальных машин** и **1 виртуальный маршрутизатор**.
 
 ---
 
@@ -95,14 +95,14 @@
 
 ---
 
-### Минимальные требования по ресурсам (на ВМ)
+### На момент защиты, системные требования на ВМ были:
 
 | ВМ | CPU | RAM | HDD | Примечания |
 |----|-----|-----|-----|------------|
 | Debian (web/db) | 2 vCPU | 2 GB | 30 GB | Docker, PostgreSQL |
 | Windows 10 | 2 vCPU | 4 GB | 40 GB | GUI, браузеры |
-| Kali Linux (сети) | 2 vCPU | 4 GB | 40 GB | атаки L2/L3 |
-| Kali Linux (DHCP) | 2 vCPU | 4 GB | 40 GB | MITM DHCP |
+| Kali Linux (сети) | 2 vCPU | 2 GB | 40 GB | атаки L2/L3 |
+| Kali Linux (DHCP) | 2 vCPU | 2 GB | 40 GB | MITM DHCP |
 | Debian (мишень) | 2 vCPU | 2 GB | 30 GB | веб-приложение |
 | Debian (DHCP мишень) | 2 vCPU | 2 GB | 30 GB | тест DHCP |
 | Debian (злоумышленник) | 2 vCPU | 2 GB | 30 GB | сбор данных |
