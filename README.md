@@ -186,7 +186,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: *mail*@list.ru
+      PGADMIN_DEFAULT_EMAIL: *mail*
       PGADMIN_DEFAULT_PASSWORD: P@ssw0rd!
     ports:
       - "1111:80"
@@ -755,7 +755,7 @@ RUN chown -R www-data:www-data /var/www/html
 После URL-кодирования подобную ссылку злоумышленник рассылает потенциальным жертвам — например, по почте или в корпоративном мессенджере, маскируя её под уведомление службы поддержки. Открыв ссылку, жертва видит обычную форму входа, но её данные уже перенаправляются на сервер атакующего и записываются в stolen_creds.txt.
 
 ### 🎥 Видео-демонстрация атаки
-**Позже вставлю**
+[Смотреть видео в Google Drive](https://drive.google.com/file/d/1A0Uh9WIpx9KFe4nZnPX7zDC-92cl0SQB/view?usp=sharing)
 
 ## 🛡 Защита
 Защита от фишинговой атаки в инфраструктуре организации на стороне пользователя:
@@ -1035,5 +1035,323 @@ root@justik-VirtualBox:~# ezzz
 -	использование SELinux/AppArmor. Применяются политики безопасности для ограничения действий процессов внутри контейнеров;
 -	проверка и обновление образов. Всегда используются проверенные образы, минимизируйте набор установленных пакетов, удаляются утилиты, которые не нужны (например, bash) из production-образов;
 -	изоляция сети контейнеров. Контейнеры из разных доверительных зон разделены сетью (например, посредством Docker Network).
+
+## 3.5 🌐 Атака истощения пула DHCP-адресов с подменой сервера (DHCP Starvation & Rogue DHCP)
+
+**DHCP Starvation** — массовая генерация DHCP DISCOVER/REQUEST с подставными MAC-адресами для быстрого исчерпания пула легитимного сервера.  
+**Rogue DHCP** — запуск фальшивого DHCP-сервера после истощения пула: клиенты получают IP, шлюз и DNS, контролируемые злоумышленником, что создаёт условия для **MITM** и подмены DNS. Основано на отсутствии аутентификации в протоколе **DHCP (CWE-346)**.
+
+---
+
+### 🔹 Лабораторный стенд
+
+**Таблица 4 — Конфигурация стенда для DHCP Starvation / Rogue DHCP**
+
+| IP-адрес / Порт     | Роль                      | Описание |
+|---------------------|---------------------------|----------|
+| `10.10.10.5:2222`   | Веб-сервер                | Сайт организации: регистрация, авторизация |
+| `10.10.10.5:1111`   | pgAdmin4                  | Веб-интерфейс администрирования PostgreSQL |
+| `10.10.10.5:5432`   | PostgreSQL                | База данных сайта |
+| `10.10.10.1`        | Маршрутизатор *(MikroTik)*| Легитимный DHCP (чистая сеть) |
+| `192.168.5.1`       | Маршрутизатор *(MikroTik)*| Легитимный DHCP во втором сегменте |
+| `10.10.10.3`        | Злоумышленник *(Kali)*    | Истощение пула DHCP + запуск Rogue DHCP, анализ трафика |
+| `192.168.5.3`       | Злоумышленник *(Kali)*    | Тот же хост в подсети 192.168.5.0/24 |
+| `DHCP-Client`       | Пользователь *(Win10)*    | Получает настройки либо от MikroTik, либо от Rogue DHCP |
+
+> Веб-приложение (ниже) нужно как «жертва» для демонстрации перехвата учётных данных/сессий при MITM.
+
+---
+
+## 📦 Cерверная часть
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: 163justIneffable
+      POSTGRES_PASSWORD: P@ssw0rd
+      POSTGRES_DB: anubis
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: *mail*
+      PGADMIN_DEFAULT_PASSWORD: P@ssw0rd!
+    ports:
+      - "1111:80"
+    depends_on:
+      - db
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./html:/var/www/html
+    ports:
+      - "2222:80"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+```
+
+### Dockerfile
+
+```dockerfile
+FROM php:apache
+
+RUN apt-get update && \
+    apt-get install -y libpq-dev && \
+    docker-php-ext-install pgsql pdo_pgsql
+```
+
+
+---
+
+## 🗂 Структура проекта
+
+```
+project-root/
+├─ docker-compose.yml
+├─ Dockerfile
+└─ html/
+   ├─ index.html
+   ├─ register.php
+   ├─ login.php
+   └─ style.css
+```
+
+Создаём директорию под код:
+
+```bash
+mkdir -p html
+```
+
+### 🗂 Файлы проекта (веб)
+
+**index.html**
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сайт с уязвимостью к SQL инъекции</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Добро пожаловать!</h1>
+    <div class="form-options">
+      <a href="login.php" class="button">Авторизация</a>
+      <a href="register.php" class="button">Регистрация</a>
+    </div>
+  </div>
+</body>
+</html>
+```
+
+**login.php**
+```php
+<?php
+// Подключение к базе данных через PDO
+$conn = new PDO("pgsql:host=192.168.0.20;dbname=anubis", "163justIneffable", "P@ssw0rd");
+
+// Проверка, что форма была отправлена методом POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Получение данных из формы
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    // Использование подготовленного запроса
+    $stmt = $conn->prepare("SELECT password FROM users WHERE username = :username");
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
+
+    // Получение результата
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && password_verify($password, $user['password'])) {
+        // ⚠️ Демонстрационно: вывод без экранирования (потенциальный XSS при злонамеренном username)
+        echo "Добро пожаловать, " . $username . "!";
+    } else {
+        echo "Неверное имя пользователя или пароль.";
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Авторизация</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Авторизация</h1>
+    <form method="POST" action="login.php">
+      <label for="username">Имя пользователя:</label>
+      <input type="text" id="username" name="username" required><br><br>
+      <label for="password">Пароль:</label>
+      <input type="password" id="password" name="password" required><br><br>
+      <button type="submit">Войти</button>
+    </form>
+    <a href="register.php" class="button">Зарегистрироваться</a>
+    <a href="index.html">Назад</a>
+  </div>
+</body>
+</html>
+```
+
+**register.php**
+```php
+<?php
+// Подключение к базе данных
+$conn = new PDO("pgsql:host=192.168.0.20;dbname=anubis", "163justIneffable", "P@ssw0rd");
+
+// Обработка данных формы
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Хеширование пароля
+
+    // Запрос на добавление пользователя
+    $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (:username, :password)");
+    $stmt->bindParam(':username', $username);
+    $stmt->bindParam(':password', $password);
+
+    if ($stmt->execute()) {
+        echo "Регистрация прошла успешно!";
+    } else {
+        echo "Ошибка при регистрации.";
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Регистрация</h1>
+    <form method="POST" action="register.php">
+      <label for="username">Имя пользователя:</label>
+      <input type="text" id="username" name="username" required><br><br>
+      <label for="password">Пароль:</label>
+      <input type="password" id="password" name="password" required><br><br>
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+    <a href="index.html">Назад</a>
+  </div>
+</body>
+</html>
+```
+
+**style.css**
+```css
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+.container {
+    background-color: #fff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    width: 320px;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 25px;
+    font-size: 24px;
+    color: #333;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+input {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 12px;
+    border: none;
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+    margin-top: 15px;
+    display: inline-block;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.form-options {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.form-options a {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+.form-options a:hover {
+    background-color: #0056b3;
+}
+```
+
+![Топология](./topology.png)
+
 
 ### в ближайшее время начну дописывать еще оставшиеся атаки...
