@@ -1736,7 +1736,7 @@ server/build/evilqr-server
 ```
 ./server/build/evilqr-server -d ./server/templates/
 ```
-> * Интерфейс с QR-кодом
+* Интерфейс с QR-кодом
 ![Интерфейс с QR-кодом](./images/ris60.png)
 
 После запуска сервер начинает принимать QR‑коды от расширения и отображать их в веб‑интерфейсе.
